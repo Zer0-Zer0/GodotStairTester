@@ -1,5 +1,4 @@
-extends CharacterBody3D
-class_name SimplePlayer
+class_name SimplePlayer extends CharacterBody3D
 
 # Constants
 const MOUSE_SENSITIVITY := 0.022 * 3.0
@@ -51,7 +50,6 @@ func handle_friction_and_acceleration(delta : float):
 # Exported variables
 @export var enable_camera_smoothing := true
 @export var enable_stairs := true
-@export var enable_skipping_hack := false
 @export var stairs_cause_floor_snap := false
 @export var skipping_hack_distance := 0.08
 @export var step_height := 0.5
@@ -60,7 +58,6 @@ func handle_friction_and_acceleration(delta : float):
 var started_process_on_floor := false
 var found_stairs := false
 var slide_snap_offset : Vector3
-var wall_test_travel : Vector3
 var wall_remainder : Vector3
 var ceiling_position : Vector3
 var ceiling_travel_distance : float
@@ -95,7 +92,6 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 	var start_velocity := velocity
 	
 	found_stairs = false
-	wall_test_travel = Vector3()
 	wall_remainder = Vector3()
 	ceiling_position = Vector3()
 	ceiling_travel_distance = 0.0
@@ -130,7 +126,6 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 		ceiling_position = global_position
 		# step 2: "check if there's a wall" trace
 		
-		wall_test_travel = velocity * delta
 		var info := move_and_collide_n_times(velocity, delta, 2)
 		velocity = info[0]
 		wall_remainder = info[1]
@@ -195,6 +190,7 @@ func _process(delta: float) -> void:
 
 # Stick input handling
 const STICK_CAMERA_SPEED := 240.0
+
 func handle_stick_input(delta: float):
 	var camera_direction := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down", 0.15)
 	var tilt := camera_direction.length()
@@ -224,6 +220,7 @@ func _unhandled_input(event: InputEvent) -> void:
 @export var camera_smoothing_meters_per_sec := 3.0
 # used to smooth out the camera when climbing stairs
 var camera_offset_y : float
+
 func handle_camera_adjustment(start_position : Vector3, delta : float):
 	# first/third-person adjustment
 	camera_holder.position.y = 1.5
