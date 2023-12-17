@@ -1,0 +1,65 @@
+[gd_scene load_steps=6 format=3 uid="uid://bav2xmwp8qbef"]
+
+[ext_resource type="Script" path="res://player/SimplePlayer.gd" id="1_8klwe"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_x1wx2"]
+size = Vector3(0.625, 1.75, 0.625)
+
+[sub_resource type="TextMesh" id="TextMesh_t6kdy"]
+text = "+"
+font_size = 22
+pixel_size = 0.05
+
+[sub_resource type="Shader" id="Shader_wk5yv"]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.1.stable's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix,cull_back,unshaded,shadows_disabled,skip_vertex_transform;
+uniform vec4 albedo : source_color;
+
+
+uniform float pixels_size = 32.0;
+uniform float scale = 1.0;
+
+void vertex() {
+    float near = 0.05;
+    float fov_scale = 2.0 / PROJECTION_MATRIX[1][1];
+    VERTEX *= fov_scale / VIEWPORT_SIZE.y * pixels_size * scale;
+    VERTEX.xyz = vec3(-VERTEX.x, -VERTEX.y, -1.0)*near;
+}
+
+void fragment() {
+	ALBEDO = albedo.rgb;
+	ALPHA = 2.0;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_05pxi"]
+render_priority = 0
+shader = SubResource("Shader_wk5yv")
+shader_parameter/albedo = Color(0.501961, 0.501961, 0.501961, 1)
+shader_parameter/pixels_size = 32.0
+shader_parameter/scale = 1.0
+
+[node name="Player" type="CharacterBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+wall_min_slide_angle = 0.0
+floor_constant_speed = true
+script = ExtResource("1_8klwe")
+do_skipping_hack = true
+
+[node name="AABB" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
+shape = SubResource("BoxShape3D_x1wx2")
+
+[node name="CameraHolder" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraHolder"]
+fov = 90.0
+
+[node name="Crosshair" type="MeshInstance3D" parent="CameraHolder/Camera3D"]
+extra_cull_margin = 16384.0
+mesh = SubResource("TextMesh_t6kdy")
+skeleton = NodePath("../../../..")
+surface_material_override/0 = SubResource("ShaderMaterial_05pxi")

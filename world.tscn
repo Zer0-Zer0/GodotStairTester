@@ -1,12 +1,8 @@
-[gd_scene load_steps=20 format=3 uid="uid://byikl3mg1l0io"]
+[gd_scene load_steps=8 format=3 uid="uid://byikl3mg1l0io"]
 
 [ext_resource type="PackedScene" uid="uid://b5rmjajnlo22w" path="res://StairsTestScene.tscn" id="1_0ystr"]
-[ext_resource type="Script" path="res://player/SimplePlayer.gd" id="1_2s7tp"]
-[ext_resource type="Script" path="res://world.gd" id="1_mkwvl"]
+[ext_resource type="PackedScene" uid="uid://bav2xmwp8qbef" path="res://player/character.tscn" id="2_7v16e"]
 [ext_resource type="Script" path="res://ResetButton.gd" id="3_2mp0y"]
-[ext_resource type="Script" path="res://CollisionBoxPicker.gd" id="4_1xxhe"]
-[ext_resource type="Script" path="res://StairsSetting.gd" id="4_05imk"]
-[ext_resource type="Script" path="res://ThirdPersonButton.gd" id="6_im2oe"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_21fc1"]
 sky_top_color = Color(0.172549, 0.517647, 1, 1)
@@ -22,65 +18,10 @@ sky = SubResource("Sky_7nx6r")
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_x1wx2"]
-size = Vector3(0.625, 1.75, 0.625)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_kujgx"]
-points = PackedVector3Array(-0.312, 0.6, -0.312, -0.312, 0.6, 0.313, 0.313, 0.6, -0.312, 0.313, 0.6, 0.313, 0, 0.875, 0, 0, -0.875, 0, -0.312, -0.6, -0.312, -0.312, -0.6, 0.312, 0.312, -0.6, -0.312, 0.312, -0.6, 0.312)
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_mkkux"]
-points = PackedVector3Array(0, 0.6, -0.313, 0, 0.6, 0.313, -0.313, 0.6, 0, 0.313, 0.6, 0, 0, 0.875, 0, 0, -0.875, 0, 0, -0.6, -0.313, 0, -0.6, 0.313, -0.313, -0.6, 0, 0.313, -0.6, 0, 0.221, 0.6, 0.221, 0.221, 0.6, -0.221, -0.221, 0.6, 0.221, -0.221, 0.6, -0.221, 0.221, -0.6, 0.221, 0.221, -0.6, -0.221, -0.221, -0.6, 0.221, -0.221, -0.6, -0.221)
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_eu7ao"]
-margin = 0.0
-height = 1.75
-radius = 0.313
-
-[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_oswhk"]
-radius = 0.313
-height = 1.75
-
-[sub_resource type="TextMesh" id="TextMesh_t6kdy"]
-text = "+"
-font_size = 22
-pixel_size = 0.05
-
-[sub_resource type="Shader" id="Shader_wk5yv"]
-code = "// NOTE: Shader automatically converted from Godot Engine 4.1.stable's StandardMaterial3D.
-
-shader_type spatial;
-render_mode blend_mix,cull_back,unshaded,shadows_disabled,skip_vertex_transform;
-uniform vec4 albedo : source_color;
-
-
-uniform float pixels_size = 32.0;
-uniform float scale = 1.0;
-
-void vertex() {
-    float near = 0.05;
-    float fov_scale = 2.0 / PROJECTION_MATRIX[1][1];
-    VERTEX *= fov_scale / VIEWPORT_SIZE.y * pixels_size * scale;
-    VERTEX.xyz = vec3(-VERTEX.x, -VERTEX.y, -1.0)*near;
-}
-
-void fragment() {
-	ALBEDO = albedo.rgb;
-	ALPHA = 2.0;
-}
-"
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_05pxi"]
-render_priority = 0
-shader = SubResource("Shader_wk5yv")
-shader_parameter/albedo = Color(0.501961, 0.501961, 0.501961, 1)
-shader_parameter/pixels_size = 32.0
-shader_parameter/scale = 1.0
-
 [sub_resource type="QuadMesh" id="QuadMesh_48u70"]
 size = Vector2(0.1, 0.1)
 
 [node name="World" type="Node3D"]
-script = ExtResource("1_mkwvl")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
@@ -89,73 +30,9 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_5u6b6")
 
-[node name="CharacterBody3D" type="CharacterBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
-wall_min_slide_angle = 0.0
-floor_constant_speed = true
-script = ExtResource("1_2s7tp")
-
-[node name="AABB" type="CollisionShape3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-shape = SubResource("BoxShape3D_x1wx2")
-disabled = true
-
-[node name="Gem" type="CollisionShape3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-visible = false
-shape = SubResource("ConvexPolygonShape3D_kujgx")
-disabled = true
-
-[node name="Octogem" type="CollisionShape3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-visible = false
-shape = SubResource("ConvexPolygonShape3D_mkkux")
-disabled = true
-
-[node name="Cylinder" type="CollisionShape3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-visible = false
-shape = SubResource("CylinderShape3D_eu7ao")
-disabled = true
-
-[node name="Capsule" type="CollisionShape3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-visible = false
-shape = SubResource("CapsuleShape3D_oswhk")
-
-[node name="CameraHolder" type="Node3D" parent="CharacterBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
-
-[node name="Camera3D" type="Camera3D" parent="CharacterBody3D/CameraHolder"]
-fov = 90.0
-
-[node name="Crosshair" type="MeshInstance3D" parent="CharacterBody3D/CameraHolder/Camera3D"]
-extra_cull_margin = 16384.0
-mesh = SubResource("TextMesh_t6kdy")
-skeleton = NodePath("../../../..")
-surface_material_override/0 = SubResource("ShaderMaterial_05pxi")
+[node name="Player" parent="." instance=ExtResource("2_7v16e")]
 
 [node name="Level" parent="." instance=ExtResource("1_0ystr")]
-
-[node name="Panel" type="Panel" parent="."]
-offset_right = 292.0
-offset_bottom = 235.0
-
-[node name="FPS" type="Label" parent="."]
-offset_right = 40.0
-offset_bottom = 23.0
-
-[node name="Vel" type="Label" parent="."]
-offset_top = 19.0
-offset_right = 40.0
-offset_bottom = 42.0
-
-[node name="Instruction" type="Label" parent="."]
-offset_left = -1.0
-offset_top = 38.0
-offset_right = 39.0
-offset_bottom = 61.0
-text = "click to focus/unfocus mouse"
 
 [node name="ResetButton" type="Button" parent="."]
 offset_left = 3.0
@@ -165,43 +42,7 @@ offset_bottom = 107.0
 text = "PANIC (reset to original position)"
 script = ExtResource("3_2mp0y")
 
-[node name="StairsSetting" type="CheckButton" parent="."]
-offset_left = 3.0
-offset_top = 114.0
-offset_right = 185.0
-offset_bottom = 145.0
-button_pressed = true
-text = "Do Stair Stepping"
-script = ExtResource("4_05imk")
-
-[node name="SkippingSetting" type="CheckButton" parent="."]
-offset_left = 3.0
-offset_top = 145.0
-offset_right = 185.0
-offset_bottom = 176.0
-text = "Do Skipping Hack"
-script = ExtResource("4_05imk")
-
-[node name="CollisionBox" type="OptionButton" parent="."]
-offset_left = 3.0
-offset_top = 176.0
-offset_right = 17.0
-offset_bottom = 196.0
-script = ExtResource("4_1xxhe")
-
-[node name="ThirdPerson" type="CheckButton" parent="."]
-offset_left = 3.0
-offset_top = 204.0
-offset_right = 185.0
-offset_bottom = 235.0
-text = "Third Person"
-script = ExtResource("6_im2oe")
-
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("QuadMesh_48u70")
 
 [connection signal="pressed" from="ResetButton" to="ResetButton" method="_on_pressed"]
-[connection signal="pressed" from="StairsSetting" to="StairsSetting" method="_on_pressed"]
-[connection signal="pressed" from="SkippingSetting" to="SkippingSetting" method="_on_pressed"]
-[connection signal="item_selected" from="CollisionBox" to="CollisionBox" method="_on_item_selected"]
-[connection signal="pressed" from="ThirdPerson" to="ThirdPerson" method="_on_pressed"]
