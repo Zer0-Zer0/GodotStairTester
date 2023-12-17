@@ -10,15 +10,14 @@ const MAX_SPEED := 320.0 / UNIT_CONVERSION
 const MAX_SPEED_AIR := 320.0 / UNIT_CONVERSION
 const ACCELERATION := 15.0
 const ACCELERATION_AIR := 2.0
+const FRICTION := 6.0
 var WISH_DIRECTION : Vector3
-var FRICTION := 6.0
 
 # Friction function
-func apply_friction(velocity : Vector3, delta : float) -> Vector3:
-	velocity *= pow(0.9, delta * 60.0)
-	if WISH_DIRECTION == Vector3():
-		velocity = velocity.move_toward(Vector3(), delta * MAX_SPEED)
-	return velocity
+func apply_friction(velocity_without_friction : Vector3, delta : float) -> Vector3:
+	velocity_without_friction *= pow(0.9, delta * 60.0)
+	velocity_without_friction = velocity_without_friction.move_toward(Vector3(), delta * MAX_SPEED)
+	return velocity_without_friction
 
 # Handling friction
 func handle_friction(delta : float):
@@ -67,27 +66,6 @@ var ceiling_position : Vector3
 var ceiling_travel_distance : float
 var ceiling_collision : KinematicCollision3D
 var floor_collision : KinematicCollision3D
-
-# Checking and attempting skipping hack
-func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
-	# try again with a certain minimum horizontal step distance if there was no wall collision and the wall trace was close
-		# go back to where we were at the end of the ceiling collision test
-	if !found_stairs and (wall_test_travel * Vector3(1, 0, 1)).length() < distance:
-		global_position = ceiling_position
-		# calculate a new path for the wall test: horizontal only, length of our fallback distance
-		var floor_velocity := Vector3(velocity.x, 0.0, velocity.z)
-		var factor := distance / floor_velocity.length()
-		
-		# step 2, skipping hack version
-		wall_test_travel = floor_velocity * factor
-		var info := move_and_collide_n_times(floor_velocity, factor, 2)
-		velocity = info[0]
-		wall_remainder = info[1]
-		
-		# step 3, skipping hack version
-		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (step_height if started_process_on_floor else 0.0)))
-		if floor_collision and floor_collision.get_collision_count() > 0 and floor_collision.get_normal(0).y > floor_normal:
-			found_stairs = true
 
 # Moving and colliding multiple times
 func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true) -> Array[Vector3]:
