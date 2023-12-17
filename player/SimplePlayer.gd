@@ -14,7 +14,7 @@ var WISH_DIRECTION : Vector3
 var FRICTION := 6.0
 
 # Friction function
-func _apply_friction(velocity : Vector3, delta : float) -> Vector3:
+func apply_friction(velocity : Vector3, delta : float) -> Vector3:
 	velocity *= pow(0.9, delta * 60.0)
 	if WISH_DIRECTION == Vector3():
 		velocity = velocity.move_toward(Vector3(), delta * MAX_SPEED)
@@ -23,7 +23,7 @@ func _apply_friction(velocity : Vector3, delta : float) -> Vector3:
 # Handling friction
 func handle_friction(delta : float):
 	if is_on_floor():
-		velocity = _apply_friction(velocity, delta)
+		velocity = apply_friction(velocity, delta)
 
 # Handling acceleration
 func handle_acceleration(delta : float):
@@ -220,19 +220,20 @@ const STICK_CAMERA_SPEED := 240.0
 func handle_stick_input(delta: float):
 	var camera_direction := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down", 0.15)
 	var tilt := camera_direction.length()
-	var acceleration : float = lerp(0.25, 1.0, tilt)
+	var acceleration : float = lerpf(0.25, 1.0, tilt)
 	camera_direction *= acceleration
 	camera_holder.rotation_degrees.y -= camera_direction.x * STICK_CAMERA_SPEED * delta
 	camera_holder.rotation_degrees.x -= camera_direction.y * STICK_CAMERA_SPEED * delta
-	camera_holder.rotation_degrees.x = clamp(camera_holder.rotation_degrees.x, -90.0, 90.0)
+	camera_holder.rotation_degrees.x = clampf(camera_holder.rotation_degrees.x, -90.0, 90.0)
 
 # Input handling
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			camera_holder.rotation_degrees.y -= event.relative.x * MOUSE_SENSITIVITY
-			camera_holder.rotation_degrees.x -= event.relative.y * MOUSE_SENSITIVITY
-			camera_holder.rotation_degrees.x = clamp(camera_holder.rotation_degrees.x, -90.0, 90.0)
+			var mouse_input := event as InputEventMouseMotion
+			camera_holder.rotation_degrees.y -= mouse_input.relative.x * MOUSE_SENSITIVITY
+			camera_holder.rotation_degrees.x -= mouse_input.relative.y * MOUSE_SENSITIVITY
+			camera_holder.rotation_degrees.x = clampf(camera_holder.rotation_degrees.x, -90.0, 90.0)
 
 # Unhandled input handling
 func _unhandled_input(event: InputEvent) -> void:
@@ -259,7 +260,7 @@ func handle_camera_adjustment(start_position : Vector3, delta : float):
 			stair_climb_distance = -slide_snap_offset.y
 		
 		camera_offset_y -= stair_climb_distance
-		camera_offset_y = clamp(camera_offset_y, -step_height, step_height)
+		camera_offset_y = clampf(camera_offset_y, -step_height, step_height)
 		camera_offset_y = move_toward(camera_offset_y, 0.0, delta * camera_smoothing_meters_per_sec)
 		
 		camera_3d.position.y = 0.0
