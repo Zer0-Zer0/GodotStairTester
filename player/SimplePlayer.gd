@@ -61,13 +61,9 @@ var wall_remainder : Vector3
 var ceiling_position : Vector3
 var ceiling_travel_distance : float
 var ceiling_collision : KinematicCollision3D
-var wall_collision : KinematicCollision3D
 var floor_collision : KinematicCollision3D
 
 func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
-	ceiling_collision = null
-	wall_collision = null
-	floor_collision = null
 	# try again with a certain minimum horizontal step distance if there was no wall collision and the wall trace was close
 	if !found_stairs and (wall_test_travel * Vector3(1,0,1)).length() < distance:
 		# go back to where we were at the end of the ceiling collision test
@@ -81,14 +77,13 @@ func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 		var info = move_and_collide_n_times(floor_velocity, factor, 2)
 		velocity = info[0]
 		wall_remainder = info[1]
-		wall_collision = info[2]
 		
 		# step 3, skipping hack version
 		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (step_height if started_process_on_floor else 0.0)))
 		if floor_collision and floor_collision.get_collision_count() > 0 and floor_collision.get_normal(0).y > floor_normal:
 			found_stairs = true
 
-func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true):
+func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true) -> Array[Vector3]:
 	var collision : KinematicCollision3D
 	var remainder := vector
 	var adjusted_vector := vector * delta
@@ -106,7 +101,7 @@ func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int
 			remainder = Vector3()
 			break
 	
-	return [vector, remainder, collision]
+	return [vector, remainder]
 
 func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 	var start_position := global_position
@@ -117,9 +112,6 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 	wall_remainder = Vector3()
 	ceiling_position = Vector3()
 	ceiling_travel_distance = 0.0
-	ceiling_collision = null
-	wall_collision = null
-	floor_collision = null
 	
 	# do move_and_slide and check if we hit a wall
 	move_and_slide()
@@ -152,7 +144,6 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 		var info = move_and_collide_n_times(velocity, delta, 2)
 		velocity = info[0]
 		wall_remainder = info[1]
-		wall_collision = info[2]
 		
 		# step 3: downwards trace
 		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (step_height if started_process_on_floor else 0.0)))
