@@ -322,32 +322,3 @@ func handle_camera_adjustment(start_position, delta):
 		$CameraHolder/Camera3D.position.y = 0.0
 		$CameraHolder/Camera3D.position.x = 0.0
 		$CameraHolder/Camera3D.global_position.y += camera_offset_y
-
-
-static func make_debug_mesh(color : Color):
-	var texture = GradientTexture2D.new()
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(0.5, 1.0)
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.gradient = Gradient.new()
-	texture.gradient.add_point(0.0, Color(1.0, 1.0, 1.0, 1.0))
-	texture.gradient.add_point(1.0, Color(1.0, 1.0, 1.0, 0.0))
-	texture.gradient.remove_point(0)
-	texture.gradient.remove_point(0)
-	texture.gradient.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CUBIC
-	
-	var mat = StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	mat.albedo_texture = texture
-	
-	var mesh = QuadMesh.new()
-	mesh.size = Vector2(0.25, 0.25)
-	mesh.material = mat
-	
-	return mesh
-
-@onready var _collision_debug_mesh = SimplePlayer.make_debug_mesh(Color(1.0, 0.75, 0.5, 0.5))
-@onready var _collision_debug_mesh_unwalkable = SimplePlayer.make_debug_mesh(Color(1.0, 0.0, 0.0, 0.5))
