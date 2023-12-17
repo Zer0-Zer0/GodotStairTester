@@ -1,21 +1,21 @@
 extends CharacterBody3D
 class_name SimplePlayer
 
-const mouse_sens = 0.022 * 3.0
+const mouse_sens : float = 0.022 * 3.0
 
-const unit_conversion = 64.0
+const unit_conversion : float = 64.0
 
-const gravity = 800.0/unit_conversion
-const jumpvel = 270.0/unit_conversion
+const gravity : float  = 800.0/unit_conversion
+const jumpvel : float = 270.0/unit_conversion
 
-const max_speed = 320.0/unit_conversion
-const max_speed_air = 320.0/unit_conversion
+const max_speed : float = 320.0/unit_conversion
+const max_speed_air : float = 320.0/unit_conversion
 
-const accel = 15.0
-const accel_air = 2.0
+const accel : float = 15.0
+const accel_air : float = 2.0
 
-var wish_dir = Vector3()
-var friction = 6.0
+var wish_dir : Vector3 = Vector3()
+var friction : float = 6.0
 
 func _ready():
 	floor_constant_speed = true
@@ -26,38 +26,38 @@ func _friction(_velocity : Vector3, delta : float) -> Vector3:
 		_velocity = _velocity.move_toward(Vector3(), delta * max_speed)
 	return _velocity
 
-func handle_friction(delta):
+func handle_friction(delta : float):
 	if is_on_floor():
 		velocity = _friction(velocity, delta)
 
-func handle_accel(delta):
+func handle_accel(delta : float):
 	if wish_dir != Vector3():
-		var actual_maxspeed = max_speed if is_on_floor() else max_speed_air
-		var wish_dir_length = wish_dir.length()
-		var actual_accel = (accel if is_on_floor() else accel_air) * actual_maxspeed * wish_dir_length
+		var actual_maxspeed : float = max_speed if is_on_floor() else max_speed_air
+		var wish_dir_length : float = wish_dir.length()
+		var actual_accel : float = (accel if is_on_floor() else accel_air) * actual_maxspeed * wish_dir_length
 		
-		var floor_velocity = Vector3(velocity.x, 0, velocity.z)
-		var speed_in_wish_dir = floor_velocity.dot(wish_dir.normalized())
-		var speed = floor_velocity.length()
+		var floor_velocity : Vector3 = Vector3(velocity.x, 0, velocity.z)
+		var speed_in_wish_dir : float = floor_velocity.dot(wish_dir.normalized())
+		var speed : float = floor_velocity.length()
 		if speed_in_wish_dir < actual_maxspeed:
-			var add_limit = actual_maxspeed - speed_in_wish_dir
-			var add_amount = min(add_limit, actual_accel*delta)
+			var add_limit : float = actual_maxspeed - speed_in_wish_dir
+			var add_amount : float = minf(add_limit, actual_accel*delta)
 			velocity += wish_dir.normalized() * add_amount
 			if is_on_floor() and speed > actual_maxspeed:
 				velocity = velocity.normalized() * speed
 
-func handle_friction_and_accel(delta):
+func handle_friction_and_accel(delta : float):
 	handle_friction(delta)
 	handle_accel(delta)
 
 @export var do_camera_smoothing : bool = true
 @export var do_stairs : bool = true
 @export var do_skipping_hack : bool = false
-@export var stairs_cause_floor_snap = false
+@export var stairs_cause_floor_snap : bool = false
 @export var skipping_hack_distance : float = 0.08
-@export var step_height = 0.5
+@export var step_height : float = 0.5
 
-var started_process_on_floor = false
+var started_process_on_floor : bool = false
 
 func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 	# try again with a certain minimum horizontal step distance if there was no wall collision and the wall trace was close
@@ -80,10 +80,10 @@ func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 		if floor_collision and floor_collision.get_collision_count() > 0 and floor_collision.get_normal(0).y > floor_normal:
 			found_stairs = true
 
-var found_stairs = false
-var wall_test_travel = Vector3()
-var wall_remainder = Vector3()
-var ceiling_position = Vector3()
+var found_stairs : bool = false
+var wall_test_travel : Vector3 = Vector3()
+var wall_remainder : Vector3 = Vector3()
+var ceiling_position : Vector3 = Vector3()
 var ceiling_travel_distance = Vector3()
 var ceiling_collision : KinematicCollision3D = null
 var wall_collision : KinematicCollision3D = null
@@ -92,12 +92,12 @@ var floor_collision : KinematicCollision3D = null
 var slide_snap_offset = Vector3()
 
 func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true):
-	var collision = null
-	var remainder = vector
-	var adjusted_vector = vector * delta
-	var _floor_normal = cos(floor_max_angle)
+	var collision : KinematicCollision3D = null
+	var remainder : Vector3 = vector
+	var adjusted_vector : Vector3 = vector * delta
+	var _floor_normal : float = cos(floor_max_angle)
 	for _i in slide_count:
-		var new_collision = move_and_collide(adjusted_vector)
+		var new_collision : KinematicCollision3D = move_and_collide(adjusted_vector)
 		if new_collision:
 			collision = new_collision
 			remainder = collision.get_remainder()
