@@ -1,21 +1,21 @@
 extends CharacterBody3D
 class_name SimplePlayer
 
-const mouse_sens : float = 0.022 * 3.0
+const mouse_sens := 0.022 * 3.0
 
-const unit_conversion : float = 64.0
+const unit_conversion := 64.0
 
-const gravity : float  = 800.0/unit_conversion
-const jumpvel : float = 270.0/unit_conversion
+const gravity := 800.0/unit_conversion
+const jumpvel := 270.0/unit_conversion
 
-const max_speed : float = 320.0/unit_conversion
-const max_speed_air : float = 320.0/unit_conversion
+const max_speed := 320.0/unit_conversion
+const max_speed_air := 320.0/unit_conversion
 
-const accel : float = 15.0
-const accel_air : float = 2.0
+const accel := 15.0
+const accel_air := 2.0
 
-var wish_dir : Vector3 = Vector3()
-var friction : float = 6.0
+var wish_dir := Vector3()
+var friction := 6.0
 
 func _ready():
 	floor_constant_speed = true
@@ -50,14 +50,14 @@ func handle_friction_and_accel(delta : float):
 	handle_friction(delta)
 	handle_accel(delta)
 
-@export var do_camera_smoothing : bool = true
-@export var do_stairs : bool = true
-@export var do_skipping_hack : bool = false
-@export var stairs_cause_floor_snap : bool = false
-@export var skipping_hack_distance : float = 0.08
-@export var step_height : float = 0.5
+@export var do_camera_smoothing := true
+@export var do_stairs := true
+@export var do_skipping_hack := false
+@export var stairs_cause_floor_snap := false
+@export var skipping_hack_distance := 0.08
+@export var step_height := 0.5
 
-var started_process_on_floor : bool = false
+var started_process_on_floor := false
 
 func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 	# try again with a certain minimum horizontal step distance if there was no wall collision and the wall trace was close
@@ -65,8 +65,8 @@ func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 		# go back to where we were at the end of the ceiling collision test
 		global_position = ceiling_position
 		# calculate a new path for the wall test: horizontal only, length of our fallback distance
-		var floor_velocity : Vector3 = Vector3(velocity.x, 0.0, velocity.z)
-		var factor : float = distance / floor_velocity.length()
+		var floor_velocity := Vector3(velocity.x, 0.0, velocity.z)
+		var factor := distance / floor_velocity.length()
 		
 		# step 2, skipping hack version
 		wall_test_travel = floor_velocity * factor
@@ -80,16 +80,16 @@ func check_and_attempt_skipping_hack(distance : float, floor_normal : float):
 		if floor_collision and floor_collision.get_collision_count() > 0 and floor_collision.get_normal(0).y > floor_normal:
 			found_stairs = true
 
-var found_stairs : bool = false
-var wall_test_travel : Vector3 = Vector3()
-var wall_remainder : Vector3 = Vector3()
-var ceiling_position : Vector3 = Vector3()
-var ceiling_travel_distance : float = 0.0
+var found_stairs := false
+var wall_test_travel := Vector3()
+var wall_remainder := Vector3()
+var ceiling_position := Vector3()
+var ceiling_travel_distance := 0.0
 var ceiling_collision : KinematicCollision3D = null
 var wall_collision : KinematicCollision3D = null
 var floor_collision : KinematicCollision3D = null
 
-var slide_snap_offset = Vector3()
+var slide_snap_offset := Vector3()
 
 func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true):
 	var collision : KinematicCollision3D = null
@@ -142,7 +142,7 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 		global_position = start_position
 		velocity = start_velocity
 		# step 1: upwards trace
-		var up_height : float = probe_probable_step_height() # NOT NECESSARY. can just be step_height.
+		var up_height := step_height # NOT NECESSARY. can just be step_height.
 		
 		ceiling_collision = move_and_collide(up_height * Vector3.UP)
 		ceiling_travel_distance = step_height if not ceiling_collision else abs(ceiling_collision.get_travel().y)
@@ -171,7 +171,7 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 	if found_stairs:
 		if allow_stair_snapping and stairs_cause_floor_snap:
 			velocity.y = 0.0
-		var oldvel = velocity
+		var oldvel : Vector3 = velocity
 		velocity = wall_remainder / delta
 		move_and_slide()
 		velocity = oldvel
@@ -182,68 +182,12 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 	
 	return found_stairs
 
-func probe_probable_step_height():
-	const hull_height : float = 1.75 # edit me
-	const center_offset : float = 0.875 # edit to match the offset between your origin and the center of your hitbox
-	const hull_width : float = 0.625 # approximately the full width of your hull
-	
-	var heading : Vector3 = (velocity * Vector3(1, 0, 1)).normalized()
-	
-	var offset : Vector3 = Vector3()
-	var test : KinematicCollision3D = move_and_collide(heading * hull_width, true)
-	if test and abs(test.get_normal().y) < 0.8:
-		offset = (test.get_position(0) - test.get_travel() - global_position) * Vector3(1, 0, 1)
-	
-	var raycast : ShapeCast3D = ShapeCast3D.new()
-	var shape : CylinderShape3D = CylinderShape3D.new()
-	shape.radius = hull_width/2.0
-	shape.height = max(0.01, hull_height - step_height*2.0 - 0.1)
-	raycast.shape = shape
-	raycast.max_results = 1
-	add_child(raycast)
-	raycast.collision_mask = collision_mask
-	raycast.position = Vector3(0.0, center_offset, 0.0)
-	if offset != Vector3():
-		raycast.target_position = heading * hull_width * 0.22 + offset
-	else:
-		raycast.target_position = heading * hull_width * 0.72
-	#raycast.force_raycast_update()
-	raycast.force_shapecast_update()
-	if raycast.is_colliding():
-		#raycast.position = raycast.get_collision_point(0)
-		raycast.global_position = raycast.get_collision_point(0)
-	else:
-		raycast.global_position += raycast.target_position
-	
-	var up_distance = 50.0
-	raycast.target_position = Vector3(0.0, 50.0, 0.0)
-	#raycast.force_raycast_update()
-	raycast.force_shapecast_update()
-	if raycast.is_colliding():
-		up_distance = raycast.get_collision_point(0).y - raycast.position.y
-	
-	var down_distance = center_offset
-	raycast.target_position = Vector3(0.0, -center_offset, 0.0)
-	#raycast.force_raycast_update()
-	raycast.force_shapecast_update()
-	if raycast.is_colliding():
-		down_distance = raycast.position.y - raycast.get_collision_point(0).y
-	
-	raycast.queue_free()
-	
-	if up_distance + down_distance < hull_height:
-		return step_height
-	else:
-		var highest = up_distance - center_offset
-		var lowest = center_offset - down_distance
-		return clamp(highest/2.0 + lowest/2.0, 0.0, step_height)
-
 func _process(delta: float) -> void:
 	started_process_on_floor = is_on_floor()
 	# for controller camera control
 	handle_stick_input(delta)
 	
-	var allow_stair_snapping = true
+	var allow_stair_snapping := true
 	if Input.is_action_pressed("ui_accept") and is_on_floor():
 		allow_stair_snapping = false
 		velocity.y = jumpvel
@@ -261,7 +205,7 @@ func _process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta * 0.5
 	
-	var start_position = global_position
+	var start_position := global_position
 	
 	# CHANGE ME: replace this with your own movement-and-stair-climbing code
 	move_and_climb_stairs(delta, allow_stair_snapping)
@@ -271,11 +215,11 @@ func _process(delta: float) -> void:
 	
 	handle_camera_adjustment(start_position, delta)
 
-const stick_camera_speed = 240.0
+const stick_camera_speed := 240.0
 func handle_stick_input(delta):
 	var camera_dir := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down", 0.15)
-	var tilt = camera_dir.length()
-	var acceleration = lerp(0.25, 1.0, tilt)
+	var tilt := camera_dir.length()
+	var acceleration : float = lerpf(0.25, 1.0, tilt)
 	camera_dir *= acceleration
 	$CameraHolder.rotation_degrees.y -= camera_dir.x * stick_camera_speed * delta
 	$CameraHolder.rotation_degrees.x -= camera_dir.y * stick_camera_speed * delta
@@ -295,24 +239,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-@export var camera_smoothing_meters_per_sec = 3.0
+@export var camera_smoothing_meters_per_sec := 3.0
 # used to smooth out the camera when climbing stairs
-var camera_offset_y = 0.0
-func handle_camera_adjustment(start_position, delta):
+var camera_offset_y := 0.0
+func handle_camera_adjustment(start_position : Vector3, delta : float):
 	# first/third-person adjustment
 	$CameraHolder.position.y = 1.5
 	$CameraHolder/Camera3D.position.z = 0.0
 	
 	if do_camera_smoothing:
 		# NOT NEEDED: camera smoothing
-		var stair_climb_distance = 0.0
+		var stair_climb_distance := 0.0
 		if found_stairs:
 			stair_climb_distance = global_position.y - start_position.y
 		elif is_on_floor():
 			stair_climb_distance = -slide_snap_offset.y
 		
 		camera_offset_y -= stair_climb_distance
-		camera_offset_y = clamp(camera_offset_y, -step_height, step_height)
+		camera_offset_y = clampf(camera_offset_y, -step_height, step_height)
 		camera_offset_y = move_toward(camera_offset_y, 0.0, delta * camera_smoothing_meters_per_sec)
 		
 		$CameraHolder/Camera3D.position.y = 0.0
