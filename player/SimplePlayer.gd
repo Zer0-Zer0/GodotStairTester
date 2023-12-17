@@ -273,8 +273,6 @@ func _process(delta: float) -> void:
 		velocity.y -= gravity * delta * 0.5
 	
 	handle_camera_adjustment(start_position, delta)
-	
-	add_collision_debug_visualizer(delta)
 
 const stick_camera_speed = 240.0
 func handle_stick_input(delta):
@@ -353,39 +351,3 @@ static func make_debug_mesh(color : Color):
 
 @onready var _collision_debug_mesh = SimplePlayer.make_debug_mesh(Color(1.0, 0.75, 0.5, 0.5))
 @onready var _collision_debug_mesh_unwalkable = SimplePlayer.make_debug_mesh(Color(1.0, 0.0, 0.0, 0.5))
-
-class Visualizer extends MeshInstance3D:
-	var life = 5.0
-	func _process(delta):
-		life -= delta
-		if life < 0.0:
-			queue_free()
-		else:
-			transparency = 1.0 - life/5.0
-
-var _debug_timer_max = 0.016
-var _debug_timer = _debug_timer_max
-func add_collision_debug_visualizer(delta):
-	_debug_timer -= delta
-	if _debug_timer > 0.0:
-		return
-	_debug_timer += _debug_timer_max
-	if _debug_timer < 0.0:
-		_debug_timer = 0.0
-	
-	var collision = floor_collision if floor_collision else wall_collision
-	if collision:
-		var normal = collision.get_normal(0)
-		if true:#normal.y > 0.1 and normal.y < 0.999:
-			var visualizer = Visualizer.new() as Visualizer
-			if acos(normal.y) < floor_max_angle:
-				visualizer.mesh = _collision_debug_mesh
-			else:
-				visualizer.mesh = _collision_debug_mesh_unwalkable
-			get_tree().current_scene.add_child(visualizer)
-			if normal.abs().dot(Vector3.UP) != 1.0:
-				visualizer.look_at_from_position(Vector3(), normal)
-			else:
-				visualizer.look_at_from_position(Vector3(), normal, Vector3.RIGHT)
-			visualizer.global_position = collision.get_position(0)
-			visualizer.global_position += normal*0.01
