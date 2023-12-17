@@ -153,6 +153,7 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool):
 		# step 2: "check if there's a wall" trace
 		
 		wall_test_travel = velocity * delta
+		var info := move_and_collide_n_times(velocity, delta, 2)
 		velocity = info[0]
 		wall_remainder = info[1]
 		
