@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://bav2xmwp8qbef"]
+[gd_scene load_steps=7 format=3 uid="uid://bav2xmwp8qbef"]
 
 [ext_resource type="Script" path="res://player/SimplePlayer.gd" id="1_8klwe"]
+[ext_resource type="Script" path="res://player/CameraHolder.gd" id="2_ivf75"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_x1wx2"]
 size = Vector3(0.625, 1.75, 0.625)
@@ -43,6 +44,7 @@ shader_parameter/scale = 1.0
 
 [node name="Player" type="CharacterBody3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+wall_min_slide_angle = 0.0
 floor_constant_speed = true
 script = ExtResource("1_8klwe")
 stairs_cause_floor_snap = true
@@ -53,6 +55,7 @@ shape = SubResource("BoxShape3D_x1wx2")
 
 [node name="CameraHolder" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+script = ExtResource("2_ivf75")
 
 [node name="Camera3D" type="Camera3D" parent="CameraHolder"]
 fov = 90.0

@@ -10,7 +10,6 @@ const MAX_SPEED_AIR := 320.0 / UNIT_CONVERSION
 const ACCELERATION := 15.0
 const ACCELERATION_AIR := 2.0
 const FRICTION := 6.0
-const STICK_CAMERA_SPEED := 240.0
 
 var WISH_DIRECTION : Vector3
 
@@ -21,6 +20,8 @@ var WISH_DIRECTION : Vector3
 @export var skipping_hack_distance := 0.08
 @export var step_height := 0.5
 @export var camera_smoothing_meters_per_sec := 3.0
+
+@export var JUMP := "ui_accept"
 
 # Stairs climbing variables
 var started_process_on_floor := false
@@ -198,23 +199,21 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 	if hit_wall and enable_stairs and (start_velocity.x != 0.0 or start_velocity.z != 0.0):
 		global_position = start_position
 		velocity = start_velocity
-		# step 1: upwards trace
 		
+		# step 1: upwards trace
 		var up_height := probe_probable_step_height()
 		ceiling_collision = move_and_collide(up_height * Vector3.UP)
-		ceiling_travel_distance = step_height if not ceiling_collision else absf(ceiling_collision.get_travel().y)
+		ceiling_travel_distance = absf(ceiling_collision.get_travel().y) if ceiling_collision else step_height
 		ceiling_position = global_position
-		# step 2: "check if there's a wall" trace
 		
+		# step 2: "check if there's a wall" trace
 		var info := move_and_collide_n_times(velocity, delta, 2)
 		velocity = info[0]
 		wall_remainder = info[1]
 		
 		# step 3: downwards trace
 		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (step_height if started_process_on_floor else 0.0)))
-		if floor_collision:
-			if floor_collision.get_normal(0).y > floor_normal:
-				found_stairs = true
+		found_stairs = floor_collision and floor_collision.get_normal(0).y > floor_normal
 	
 	# (this section is more complex than it needs to be, because of move_and_slide taking velocity and delta for granted)
 	# if we found stairs, climb up them
@@ -232,11 +231,9 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 # Process function
 func _physics_process(delta: float) -> void:
 	started_process_on_floor = is_on_floor()
-	# for controller camera control
-	handle_stick_input(delta)
 	
 	var allow_stair_snapping := true
-	if Input.is_action_pressed("ui_accept") and is_on_floor():
+	if Input.is_action_pressed(JUMP) and is_on_floor():
 		allow_stair_snapping = false
 		velocity.y = JUMP_VELOCITY
 		floor_snap_length = 0.0
@@ -258,29 +255,3 @@ func _physics_process(delta: float) -> void:
 		velocity.y -= GRAVITY * delta
 	
 	handle_camera_smoothing(start_position, delta)
-
-func handle_stick_input(delta: float):
-	var camera_direction := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down", 0.15)
-	var tilt := camera_direction.length()
-	var acceleration : float = lerpf(0.25, 1.0, tilt)
-	camera_direction *= acceleration
-	camera_holder.rotation_degrees.y -= camera_direction.x * STICK_CAMERA_SPEED * delta
-	camera_holder.rotation_degrees.x -= camera_direction.y * STICK_CAMERA_SPEED * delta
-	camera_holder.rotation_degrees.x = clampf(camera_holder.rotation_degrees.x, -90.0, 90.0)
-
-# Input handling
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion:
-		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			var mouse_input := event as InputEventMouseMotion
-			camera_holder.rotation_degrees.y -= mouse_input.relative.x * MOUSE_SENSITIVITY
-			camera_holder.rotation_degrees.x -= mouse_input.relative.y * MOUSE_SENSITIVITY
-			camera_holder.rotation_degrees.x = clampf(camera_holder.rotation_degrees.x, -90.0, 90.0)
-
-# Unhandled input handling
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("m1") or event.is_action_pressed("m2"):
-		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
