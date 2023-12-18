@@ -67,9 +67,9 @@ func handle_acceleration(delta : float) -> void:
 				velocity = velocity.normalized() * speed
 
 # Handling friction and acceleration together
-func handle_friction_and_acceleration(delta : float):
-	handle_friction(delta)
+func handle_friction_and_acceleration(delta : float) -> void:
 	handle_acceleration(delta)
+	handle_friction(delta)
 
 # Moving and colliding multiple times
 func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true) -> Array[Vector3]:
@@ -148,6 +148,23 @@ func probe_probable_step_height() -> float:
 		var highest := up_distance - center_offset
 		var lowest := center_offset - down_distance
 		return clampf(highest/2.0 + lowest/2.0, 0.0, step_height)
+
+func handle_camera_smoothing(start_position : Vector3, delta : float) -> void:
+	var camera_offset_y := 0.0
+	var stair_climb_distance := 0.0
+	
+	if found_stairs:
+		stair_climb_distance = global_position.y - start_position.y
+	elif is_on_floor():
+		stair_climb_distance = -slide_snap_offset.y
+	
+	camera_offset_y -= stair_climb_distance
+	camera_offset_y = clampf(camera_offset_y, -step_height, step_height)
+	camera_offset_y = move_toward(camera_offset_y, 0.0, delta * camera_smoothing_meters_per_sec)
+	
+	camera_3d.position.y = 0.0
+	camera_3d.position.x = 0.0
+	camera_3d.global_position.y += camera_offset_y
 
 # Moving and climbing stairs
 func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
@@ -240,7 +257,7 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
 	
-	handle_camera_adjustment(start_position, delta)
+	handle_camera_smoothing(start_position, delta)
 
 func handle_stick_input(delta: float):
 	var camera_direction := Input.get_vector("camera_left", "camera_right", "camera_up", "camera_down", 0.15)
@@ -267,22 +284,3 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
-func handle_camera_adjustment(start_position : Vector3, delta : float):
-		# NOT NEEDED: camera smoothing
-	if enable_camera_smoothing:
-		var camera_offset_y := 0.0
-		var stair_climb_distance := 0.0
-		
-		if found_stairs:
-			stair_climb_distance = global_position.y - start_position.y
-		elif is_on_floor():
-			stair_climb_distance = -slide_snap_offset.y
-		
-		camera_offset_y -= stair_climb_distance
-		camera_offset_y = clampf(camera_offset_y, -step_height, step_height)
-		camera_offset_y = move_toward(camera_offset_y, 0.0, delta * camera_smoothing_meters_per_sec)
-		
-		camera_3d.position.y = 0.0
-		camera_3d.position.x = 0.0
-		camera_3d.global_position.y += camera_offset_y
