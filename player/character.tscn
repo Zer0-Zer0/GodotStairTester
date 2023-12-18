@@ -49,6 +49,7 @@ floor_constant_speed = true
 script = ExtResource("1_8klwe")
 stairs_cause_floor_snap = true
 collision_shape = SubResource("BoxShape3D_ppx6l")
+GRAVITY = 9.807
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 

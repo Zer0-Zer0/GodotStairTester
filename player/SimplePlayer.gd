@@ -110,22 +110,22 @@ func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int
 	
 	return [vector, remainder]
 
-func probe_probable_step_height() -> float: #TODO reduce magic numbers
-	var hull_height : float = collision_shape.size.y
-	var center_offset : float = collision_shape.size.y / 2
-	var hull_width : float = collision_shape.size.x
-
+func probe_probable_step_height() -> float:
+	var hull_height := collision_shape.size.y
+	var hull_width := collision_shape.size.x
+	var center_offset := hull_height / 2
+	
 	var heading := (velocity * Vector3(1, 0, 1)).normalized()
-
+	
 	var offset : Vector3
 	var test := move_and_collide(heading * hull_width, true)
-	if test and absf(test.get_normal().y) < STEP_HEIGHT:
+	if test and absf(test.get_normal().y) < 0.8:
 		offset = (test.get_position(0) - test.get_travel() - global_position) * Vector3(1, 0, 1)
-
+	
 	var raycast := ShapeCast3D.new()
 	var shape := CylinderShape3D.new()
 	shape.radius = hull_width/2.0
-	shape.height = maxf(0.01, hull_height - STEP_HEIGHT * 2.0)
+	shape.height = maxf(0.01, hull_height - STEP_HEIGHT*2.0 - 0.1)
 	raycast.shape = shape
 	raycast.max_results = 1
 	add_child(raycast)
@@ -134,27 +134,27 @@ func probe_probable_step_height() -> float: #TODO reduce magic numbers
 	if offset != Vector3():
 		raycast.target_position = heading * hull_width * 0.22 + offset
 	else:
-		raycast.target_position = heading * hull_width * center_offset
+		raycast.target_position = heading * hull_width * 0.72
 	raycast.force_shapecast_update()
 	if raycast.is_colliding():
 		raycast.global_position = raycast.get_collision_point(0)
 	else:
 		raycast.global_position += raycast.target_position
-
+	
 	var up_distance := 50.0
 	raycast.target_position = Vector3(0.0, 50.0, 0.0)
 	raycast.force_shapecast_update()
 	if raycast.is_colliding():
 		up_distance = raycast.get_collision_point(0).y - raycast.position.y
-
+	
 	var down_distance := center_offset
 	raycast.target_position = Vector3(0.0, -center_offset, 0.0)
 	raycast.force_shapecast_update()
 	if raycast.is_colliding():
 		down_distance = raycast.position.y - raycast.get_collision_point(0).y
-
+	
 	raycast.queue_free()
-
+	
 	if up_distance + down_distance < hull_height:
 		return STEP_HEIGHT
 	else:
@@ -219,6 +219,22 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 		global_position = slide_position
 		velocity = slide_velocity
 
+var camera_offset_y : float
+func handle_camera_smoothing(start_position : Vector3, delta : float) -> void:
+	var stair_climb_distance : float
+	if found_stairs:
+		stair_climb_distance = global_position.y - start_position.y
+	elif is_on_floor():
+		stair_climb_distance = -slide_snap_offset.y
+	
+	camera_offset_y -= stair_climb_distance
+	camera_offset_y = clampf(camera_offset_y, -STEP_HEIGHT, STEP_HEIGHT)
+	camera_offset_y = move_toward(camera_offset_y, 0.0, delta * 3)
+	
+	camera_3d.position.y = 0.0
+	camera_3d.position.x = 0.0
+	camera_3d.global_position.y += camera_offset_y
+
 # Process function
 func _physics_process(delta: float) -> void:
 	started_process_on_floor = is_on_floor()
@@ -237,8 +253,15 @@ func _physics_process(delta: float) -> void:
 		wish_direction = wish_direction.normalized()
 	
 	handle_friction_and_acceleration(delta)
-
+	
+	if not is_on_floor():
+		velocity.y -= GRAVITY * delta * 0.5
+	
+	var start_position := global_position
+	
 	move_and_climb_stairs(delta, allow_stair_snapping)
 	
 	if not is_on_floor():
-		velocity.y -= GRAVITY * delta
+		velocity.y -= GRAVITY * delta * 0.5
+	
+	handle_camera_smoothing(start_position, delta)
