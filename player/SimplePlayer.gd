@@ -6,7 +6,6 @@ const UNIT_CONVERSION := 64.0
 # Exported variables
 
 @export_category("Character specs")
-@export var GRAVITY := 9.8
 @export var JUMP_VELOCITY := 270.0 / UNIT_CONVERSION
 @export var MAX_SPEED := 320.0 / UNIT_CONVERSION
 @export var MAX_SPEED_AIR := 320.0 / UNIT_CONVERSION
@@ -20,6 +19,7 @@ const UNIT_CONVERSION := 64.0
 @export var enable_stairs := true
 @export var stairs_cause_floor_snap := false
 @export var collision_shape : BoxShape3D
+@export var GRAVITY := 800.0 / UNIT_CONVERSION
 
 #I've put these bindings so it works out of the get-go on any godot scene
 @export_category("Keybindings")
@@ -119,13 +119,13 @@ func probe_probable_step_height() -> float: #TODO reduce magic numbers
 
 	var offset : Vector3
 	var test := move_and_collide(heading * hull_width, true)
-	if test and absf(test.get_normal().y) < 0.8:
+	if test and absf(test.get_normal().y) < STEP_HEIGHT:
 		offset = (test.get_position(0) - test.get_travel() - global_position) * Vector3(1, 0, 1)
 
 	var raycast := ShapeCast3D.new()
 	var shape := CylinderShape3D.new()
 	shape.radius = hull_width/2.0
-	shape.height = maxf(0.01, hull_height - STEP_HEIGHT * 2.0 - 0.1)
+	shape.height = maxf(0.01, hull_height - STEP_HEIGHT * 2.0)
 	raycast.shape = shape
 	raycast.max_results = 1
 	add_child(raycast)
@@ -134,7 +134,7 @@ func probe_probable_step_height() -> float: #TODO reduce magic numbers
 	if offset != Vector3():
 		raycast.target_position = heading * hull_width * 0.22 + offset
 	else:
-		raycast.target_position = heading * hull_width * 0.72
+		raycast.target_position = heading * hull_width * center_offset
 	raycast.force_shapecast_update()
 	if raycast.is_colliding():
 		raycast.global_position = raycast.get_collision_point(0)
