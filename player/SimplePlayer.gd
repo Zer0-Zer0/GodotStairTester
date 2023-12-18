@@ -201,10 +201,7 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 	if found_stairs:
 		if allow_stair_snapping and stairs_cause_floor_snap:
 			velocity.y = 0.0
-		var old_velocity : Vector3 = velocity
-		velocity = wall_remainder / delta
-		move_and_slide()
-		velocity = old_velocity
+		move_and_collide(wall_remainder / delta)
 	else:
 		global_position = slide_position
 		velocity = slide_velocity
