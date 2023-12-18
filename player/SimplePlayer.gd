@@ -2,25 +2,38 @@ class_name SimplePlayer extends CharacterBody3D
 
 # Constants
 const UNIT_CONVERSION := 64.0
-const GRAVITY := 800.0 / UNIT_CONVERSION
-const JUMP_VELOCITY := 270.0 / UNIT_CONVERSION
-const MAX_SPEED := 320.0 / UNIT_CONVERSION
-const MAX_SPEED_AIR := 320.0 / UNIT_CONVERSION
-const ACCELERATION := 15.0
-const ACCELERATION_AIR := 2.0
-const FRICTION := 6.0
-
-var WISH_DIRECTION : Vector3
 
 # Exported variables
+
+@export_category("Character specs")
+@export var GRAVITY := 9.8
+@export var JUMP_VELOCITY := 270.0 / UNIT_CONVERSION
+@export var MAX_SPEED := 320.0 / UNIT_CONVERSION
+@export var MAX_SPEED_AIR := 320.0 / UNIT_CONVERSION
+@export var ACCELERATION := 15.0
+@export var ACCELERATION_AIR := 2.0
+@export var FRICTION := 0.9
+@export var STEP_HEIGHT := 0.5
+
+@export_category("Configuration")
 @export var enable_camera_smoothing := true
 @export var enable_stairs := true
 @export var stairs_cause_floor_snap := false
-@export var skipping_hack_distance := 0.08
-@export var step_height := 0.5
-
-@export var JUMP := "ui_accept"
 @export var collision_shape : BoxShape3D
+
+#I've put these bindings so it works out of the get-go on any godot scene
+@export_category("Keybindings")
+@export var JUMP := "ui_accept"
+@export var FORWARD := "ui_up"
+@export var BACKWARD := "ui_down"
+@export var LEFT := "ui_left"
+@export var RIGHT := "ui_right"
+
+@export_category("Controller Bindings")
+@export var STICK_FORWARD := "stick_forward"
+@export var STICK_BACKWARD := "stick_backward"
+@export var STICK_LEFT := "stick_left"
+@export var STICK_RIGHT := "stick_right"
 
 # Stairs climbing variables
 var started_process_on_floor := false
@@ -37,13 +50,15 @@ var floor_collision : KinematicCollision3D
 @onready var camera_3d := $CameraHolder/Camera3D as Camera3D
 @onready var collision_node = $Collision as CollisionShape3D
 
+var wish_direction : Vector3
+
 func _ready():
 	collision_node.shape = collision_shape
 	collision_node.position.y = collision_shape.size.y/2
 
 # Friction function
 func apply_friction(velocity_without_friction : Vector3, delta : float) -> Vector3:
-	velocity_without_friction *= pow(0.9, delta * 60.0)
+	velocity_without_friction *= pow(FRICTION, delta * 60)
 	velocity_without_friction = velocity_without_friction.move_toward(Vector3(), delta * MAX_SPEED)
 	return velocity_without_friction
 
@@ -54,19 +69,18 @@ func handle_friction(delta : float) -> void:
 
 # Handling acceleration
 func handle_acceleration(delta : float) -> void:
-	if WISH_DIRECTION != Vector3():
+	if wish_direction != Vector3():
 		var actual_max_speed := MAX_SPEED if is_on_floor() else MAX_SPEED_AIR
-		var wish_direction_length := WISH_DIRECTION.length()
+		var wish_direction_length := wish_direction.length()
 		var actual_acceleration := (ACCELERATION if is_on_floor() else ACCELERATION_AIR) * actual_max_speed * wish_direction_length
 		var floor_velocity := Vector3(velocity.x, 0, velocity.z)
-		
-		var speed_in_wish_direction := floor_velocity.dot(WISH_DIRECTION.normalized())
+		var speed_in_wish_direction := floor_velocity.dot(wish_direction.normalized())
 		var speed := floor_velocity.length()
 		
 		if speed_in_wish_direction < actual_max_speed:
 			var add_limit := actual_max_speed - speed_in_wish_direction
 			var add_amount := minf(add_limit, actual_acceleration * delta)
-			velocity += WISH_DIRECTION.normalized() * add_amount
+			velocity += wish_direction.normalized() * add_amount
 			
 			if is_on_floor() and speed > actual_max_speed:
 				velocity = velocity.normalized() * speed
@@ -77,7 +91,7 @@ func handle_friction_and_acceleration(delta : float) -> void:
 	handle_friction(delta)
 
 # Moving and colliding multiple times
-func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int, skip_reject_if_ceiling : bool = true) -> Array[Vector3]:
+func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int) -> Array[Vector3]:
 	var remainder := vector
 	var adjusted_vector := vector * delta
 	var floor_normal := cos(floor_max_angle)
@@ -87,7 +101,7 @@ func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int
 		if collision:
 			remainder = collision.get_remainder()
 			adjusted_vector = remainder
-			if !skip_reject_if_ceiling or collision.get_normal().y >= -floor_normal:
+			if collision.get_normal().y >= -floor_normal:
 				adjusted_vector = adjusted_vector.slide(collision.get_normal())
 				vector = vector.slide(collision.get_normal())
 		else:
@@ -96,7 +110,7 @@ func move_and_collide_n_times(vector : Vector3, delta : float, slide_count : int
 	
 	return [vector, remainder]
 
-func probe_probable_step_height() -> float:
+func probe_probable_step_height() -> float: #TODO reduce magic numbers
 	var hull_height : float = collision_shape.size.y
 	var center_offset : float = collision_shape.size.y / 2
 	var hull_width : float = collision_shape.size.x
@@ -111,7 +125,7 @@ func probe_probable_step_height() -> float:
 	var raycast := ShapeCast3D.new()
 	var shape := CylinderShape3D.new()
 	shape.radius = hull_width/2.0
-	shape.height = maxf(0.01, hull_height - step_height*2.0 - 0.1)
+	shape.height = maxf(0.01, hull_height - STEP_HEIGHT * 2.0 - 0.1)
 	raycast.shape = shape
 	raycast.max_results = 1
 	add_child(raycast)
@@ -142,11 +156,11 @@ func probe_probable_step_height() -> float:
 	raycast.queue_free()
 
 	if up_distance + down_distance < hull_height:
-		return step_height
+		return STEP_HEIGHT
 	else:
 		var highest := up_distance - center_offset
 		var lowest := center_offset - down_distance
-		return clampf(highest/2.0 + lowest/2.0, 0.0, step_height)
+		return clampf(highest/2.0 + lowest/2.0, 0.0, STEP_HEIGHT)
 
 # Moving and climbing stairs
 func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
@@ -184,7 +198,7 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 		# step 1: upwards trace
 		var up_height := probe_probable_step_height()
 		ceiling_collision = move_and_collide(up_height * Vector3.UP)
-		ceiling_travel_distance = absf(ceiling_collision.get_travel().y) if ceiling_collision else step_height
+		ceiling_travel_distance = absf(ceiling_collision.get_travel().y) if ceiling_collision else STEP_HEIGHT
 		ceiling_position = global_position
 		
 		# step 2: "check if there's a wall" trace
@@ -193,10 +207,9 @@ func move_and_climb_stairs(delta : float, allow_stair_snapping : bool) -> void:
 		wall_remainder = info[1]
 		
 		# step 3: downwards trace
-		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (step_height if started_process_on_floor else 0.0)))
+		floor_collision = move_and_collide(Vector3.DOWN * (ceiling_travel_distance + (STEP_HEIGHT if started_process_on_floor else 0.0)))
 		found_stairs = floor_collision and floor_collision.get_normal(0).y > floor_normal
 	
-	# (this section is more complex than it needs to be, because of move_and_slide taking velocity and delta for granted)
 	# if we found stairs, climb up them
 	if found_stairs:
 		if allow_stair_snapping and stairs_cause_floor_snap:
@@ -216,12 +229,12 @@ func _physics_process(delta: float) -> void:
 		velocity.y = JUMP_VELOCITY
 		floor_snap_length = 0.0
 	elif started_process_on_floor:
-		floor_snap_length = step_height + safe_margin
+		floor_snap_length = STEP_HEIGHT + safe_margin
 	
-	var input_direction := Input.get_vector("left", "right", "forward", "backward") + Input.get_vector("stick_left", "stick_right", "stick_forward", "stick_backward")
-	WISH_DIRECTION = Vector3(input_direction.x, 0, input_direction.y).rotated(Vector3.UP, camera_holder.global_rotation.y)
-	if WISH_DIRECTION.length_squared() > 1.0:
-		WISH_DIRECTION = WISH_DIRECTION.normalized()
+	var input_direction := Input.get_vector(LEFT, RIGHT, FORWARD, BACKWARD) + Input.get_vector(STICK_LEFT, STICK_RIGHT, STICK_FORWARD, STICK_BACKWARD)
+	wish_direction = Vector3(input_direction.x, 0, input_direction.y).rotated(Vector3.UP, camera_holder.global_rotation.y)
+	if wish_direction.length_squared() > 1.0:
+		wish_direction = wish_direction.normalized()
 	
 	handle_friction_and_acceleration(delta)
 
