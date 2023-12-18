@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://player/SimplePlayer.gd" id="1_8klwe"]
 [ext_resource type="Script" path="res://player/CameraHolder.gd" id="2_ivf75"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_x1wx2"]
+[sub_resource type="BoxShape3D" id="BoxShape3D_ppx6l"]
 size = Vector3(0.625, 1.75, 0.625)
 
 [sub_resource type="TextMesh" id="TextMesh_t6kdy"]
@@ -48,10 +48,9 @@ wall_min_slide_angle = 0.0
 floor_constant_speed = true
 script = ExtResource("1_8klwe")
 stairs_cause_floor_snap = true
+collision_shape = SubResource("BoxShape3D_ppx6l")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.875, 0)
-shape = SubResource("BoxShape3D_x1wx2")
 
 [node name="CameraHolder" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
